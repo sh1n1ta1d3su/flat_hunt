@@ -10,6 +10,7 @@ __pycache__/
 venv/
 ENV/
 env/
-
+parser/test_files
+test.html
 # Environment variables (Секреты)
 .env
