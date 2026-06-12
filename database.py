@@ -1,10 +1,11 @@
 import psycopg2
+import os
 
 # Данные для подключения (ровно те же, что мы писали в docker-compose.yml)
 DB_USER = "hunter"
 DB_PASSWORD = "hunter_password"
 DB_NAME = "flathunter"
-DB_HOST = "localhost"  # Так как мы пробросили порт 5432 на твой компьютер
+DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = "5432"
 
 
