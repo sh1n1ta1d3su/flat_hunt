@@ -14,7 +14,6 @@ USER_ID = int(os.getenv("TELEGRAM_USER_ID","0"))
 async def send(area, metro, distance, clean_price, full_url, img_url):
     bot = Bot(token=BOT_TOKEN)
 
-    # Формируем красивый текст
     text = (
         f"🏠 <b>Новая квартира!</b>\n"
         f"💰 Цена: {clean_price}\n"
@@ -24,7 +23,7 @@ async def send(area, metro, distance, clean_price, full_url, img_url):
     )
 
     try:
-        # Если ссылка на картинку нормальная, отправляем ФОТО с подписью
+        # Если ссылка на картинку нормальная, отправляем фото с подписью
         if img_url.startswith("http"):
             await bot.send_photo(
                 chat_id=USER_ID,
@@ -40,7 +39,7 @@ async def send(area, metro, distance, clean_price, full_url, img_url):
                 parse_mode="HTML"
             )
     finally:
-        # Обязательно закрываем сессию, чтобы не было таймаутов
+        # Закрываем сессию, чтобы не было таймаутов
         await bot.session.close()
 
 dp = Dispatcher()
@@ -84,7 +83,7 @@ async def cmd_current(message: types.Message):
 async def main():
     init_db()
     bot = Bot(token=BOT_TOKEN)
-    print("🤖 Бот запущен!")
+    print("Бот запущен!")
     await dp.start_polling(bot)
 
 

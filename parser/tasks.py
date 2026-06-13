@@ -20,16 +20,16 @@ HEADERS = {
 
 @app.task(name="parser.tasks.parse_flats_task")
 def parse_flats_task():
-    print("🚀 Celery Worker взял задачу: 📡 Идем на Яндекс...")
+    print("Celery Worker взял задачу:  Идем на Яндекс...")
 
     # 1. Проверяем/создаем таблицу в БД перед запуском парсера
     init_db()
     target_url = get_search_url()
     if not target_url:
-        print("📭 Ссылка для поиска не задана. Жду команду /set в боте.")
+        print(" Ссылка для поиска не задана. Жду команду /set в боте.")
         return
 
-    print(f"🚀 Воркер взял задачу: 📡 Идем по ссылке: {target_url[:50]}...")
+    print(f" Воркер взял задачу: Идем по ссылке: {target_url[:50]}...")
     # 2. Делаем запрос
     response = requests.get(target_url, headers=HEADERS)
 
@@ -78,6 +78,6 @@ def parse_flats_task():
                     print(f"🆕 Найдена новая квартира: {full_url}")
                     asyncio.run(send(area, metro, distance, clean_price, full_url, img_url))
                 else:
-                    print(f"🔕 Квартира уже есть в базе, пропускаем: {full_url}")
+                    print(f"Квартира уже есть в базе, пропускаем: {full_url}")
     else:
-        print(f"❌ Ошибка доступа к Яндексу: {response.status_code}")
+        print(f"Ошибка доступа к Яндексу: {response.status_code}")

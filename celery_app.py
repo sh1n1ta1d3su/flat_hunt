@@ -12,7 +12,7 @@ app = Celery(
     include=["parser.tasks"]  # Указываем, в каком файле искать задачи
 )
 
-# Настраиваем планировщик (Celery Beat)
+# Настраиваем планировщик
 app.conf.beat_schedule = {
     "parse-yandex-every-5-minutes": {
         "task": "parser.tasks.parse_flats_task",

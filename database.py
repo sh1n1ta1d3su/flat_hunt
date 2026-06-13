@@ -8,7 +8,7 @@ DB_NAME = "flathunter"
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = "5432"
 
-# 1. Единая функция для подключения к БД (чтобы не дублировать код)
+# 1. Единая функция для подключения к БД
 def get_db_connection():
     return psycopg2.connect(
         dbname=DB_NAME,
@@ -23,7 +23,7 @@ def init_db():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        print("✅ Успешное подключение к PostgreSQL!")
+        print("Успешное подключение к PostgreSQL!")
 
         # 2. Создаем таблицу для квартир
         cursor.execute("""
@@ -47,10 +47,10 @@ def init_db():
 
         # Сохраняем изменения
         conn.commit()
-        print("✅ Таблицы 'flats' и 'search_urls' успешно созданы (или уже существуют)!")
+        print("Таблицы 'flats' и 'search_urls' успешно созданы (или уже существуют)!")
 
     except Exception as e:
-        print(f"❌ Ошибка при работе с БД: {e}")
+        print(f"Ошибка при работе с БД: {e}")
     finally:
         if conn:
             cursor.close()
@@ -78,9 +78,7 @@ def set_search_url(url):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Сначала очищаем таблицу от старых ссылок
         cursor.execute("DELETE FROM search_urls")
-        # Записываем новую
         cursor.execute("INSERT INTO search_urls (url) VALUES (%s)", (url,))
         conn.commit()
         return True
