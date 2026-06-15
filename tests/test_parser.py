@@ -8,3 +8,4 @@ def test_format_price_normal():
 def test_format_price_empty():
     result = format_price(None)
     assert result == "Цена не указана"
+    
