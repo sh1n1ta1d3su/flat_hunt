@@ -17,12 +17,16 @@ HEADERS = {
     "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
 }
 
+def format_price(raw_price_text):
+    if not raw_price_text:
+        return "Цена не указана"
+    return raw_price_text.replace("\xa0", " ").strip()
 
 @app.task(name="parser.tasks.parse_flats_task")
 def parse_flats_task():
     print("Celery Worker взял задачу:  Идем на Яндекс...")
 
-    # 1. Проверяем/создаем таблицу в БД перед запуском парсера
+    # Проверяем/создаем таблицу в БД перед запуском парсера
     init_db()
     target_url = get_search_url()
     if not target_url:
@@ -30,7 +34,7 @@ def parse_flats_task():
         return
 
     print(f" Воркер взял задачу: Идем по ссылке: {target_url[:50]}...")
-    # 2. Делаем запрос
+    # Делаем запрос
     response = requests.get(target_url, headers=HEADERS)
 
     if response.status_code == 200:
@@ -49,8 +53,8 @@ def parse_flats_task():
 
             # Если базовые данные есть, обрабатываем
             if price_block and link_tag:
-                clean_price = price_block.text.replace("\xa0", " ")
-
+                clean_price = format_price(price_block.text)
+                
                 raw_url = link_tag.get("href")
                 full_url = raw_url if raw_url.startswith("http") else f"https://realty.yandex.ru{raw_url}"
 
