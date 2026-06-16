@@ -3,6 +3,7 @@ image: python:3.11-slim
 stages:
   - lint
   - test
+  - build
 
 before_script:
   - pip install --upgrade pip
@@ -18,3 +19,14 @@ test_code:
   stage: test
   script:
     - pytest
+
+build_images:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script: []
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE/parser:latest -f Dockerfile .
+    - docker push $CI_REGISTRY_IMAGE/parser:latest
