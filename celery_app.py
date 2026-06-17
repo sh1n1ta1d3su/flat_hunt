@@ -16,7 +16,7 @@ app = Celery(
 app.conf.beat_schedule = {
     "parse-yandex-every-5-minutes": {
         "task": "parser.tasks.parse_flats_task",
-        "schedule": 100.0,  \
+        "schedule": 600.0,  \
     },
 }
 app.conf.timezone = "UTC"

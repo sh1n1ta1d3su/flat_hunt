@@ -2,6 +2,7 @@ import sys
 import os
 import asyncio
 import requests
+import logging #
 from bs4 import BeautifulSoup
 
 # Добавляем корень проекта в пути
@@ -10,6 +11,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import add_flat, init_db, get_search_url
 from bot.bot import send
 from celery_app import app
+from prometheus_client import start_http_server, Counter, Summary
+from celery.signals import worker_ready
+
+FLATS_FOUND = Counter('flats_found_total', 'Total number of successfully found flats')
+PARSE_ERRORS = Counter('parse_errors_total', 'Total number of parsing errors')
+PARSE_TIME = Summary('parse_processing_seconds', 'Time spent processing a parse task')
+
+@worker_ready.connect
+def start_metrics(**kwargs):
+    logging.warning("ЗАПУСК СЕРВЕРА МЕТРИК PROMETHEUS НА ПОРТУ 8000!")
+    start_http_server(8000, addr='0.0.0.0')
 
 # Маскируемся под живого пользователя
 HEADERS = {
@@ -22,66 +34,72 @@ def format_price(raw_price_text):
         return "Цена не указана"
     return raw_price_text.replace("\xa0", " ").strip()
 
+
 @app.task(name="parser.tasks.parse_flats_task")
 def parse_flats_task():
-    print("Celery Worker взял задачу:  Идем на Яндекс...")
+    with PARSE_TIME.time():
+        try:
+            init_db()
+            target_url = get_search_url()
+            if not target_url:
+                print(" Ссылка для поиска не задана. Жду команду /set в боте.")
+                return
 
-    # Проверяем/создаем таблицу в БД перед запуском парсера
-    init_db()
-    target_url = get_search_url()
-    if not target_url:
-        print(" Ссылка для поиска не задана. Жду команду /set в боте.")
-        return
+            print(f" Воркер взял задачу: Идем по ссылке: {target_url[:50]}...")
+            response = requests.get(target_url, headers=HEADERS)
 
-    print(f" Воркер взял задачу: Идем по ссылке: {target_url[:50]}...")
-    # Делаем запрос
-    response = requests.get(target_url, headers=HEADERS)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, "html.parser")
+                flats = soup.find_all("li", class_="OffersSerpItem")
+                print(f"Найдено квартир на странице: {len(flats)}\n")
 
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, "html.parser")
-        flats = soup.find_all("li", class_="OffersSerpItem")
-        print(f"🔍 Найдено квартир на странице: {len(flats)}\n")
+                for flat in flats:
+                    price_block = flat.find(class_=lambda x: x and "OffersSerpItem__price" in x)
+                    link_tag = flat.find("a", class_=lambda x: x and "OffersSerpItem__link" in x)
+                    title_block = flat.find(class_=lambda x: x and "OffersSerpItemTitle__title" in x)
+                    metro_block = flat.find(class_=lambda x: x and "MetroStation__title" in x)
+                    distance_block = flat.find(class_=lambda x: x and "MetroWithTime__distance" in x)
+                    img_tag = flat.find("img")
 
-        for flat in flats:
-            # Ищем блоки
-            price_block = flat.find(class_=lambda x: x and "OffersSerpItem__price" in x)
-            link_tag = flat.find("a", class_=lambda x: x and "OffersSerpItem__link" in x)
-            title_block = flat.find(class_=lambda x: x and "OffersSerpItemTitle__title" in x)
-            metro_block = flat.find(class_=lambda x: x and "MetroStation__title" in x)
-            distance_block = flat.find(class_=lambda x: x and "MetroWithTime__distance" in x)
-            img_tag = flat.find("img")
+                    # Если базовые данные есть, обрабатываем
+                    if price_block and link_tag:
+                        clean_price = format_price(price_block.text)
 
-            # Если базовые данные есть, обрабатываем
-            if price_block and link_tag:
-                clean_price = format_price(price_block.text)
-                
-                raw_url = link_tag.get("href")
-                full_url = raw_url if raw_url.startswith("http") else f"https://realty.yandex.ru{raw_url}"
+                        raw_url = link_tag.get("href")
+                        full_url = raw_url if raw_url.startswith("http") else f"https://realty.yandex.ru{raw_url}"
 
-                # Квадратура
-                if title_block:
-                    full_title = title_block.text.replace("\xa0", " ")
-                    area = full_title.split("·")[0].strip()
-                else:
-                    area = "Площадь неизвестна"
+                        # Квадратура
+                        if title_block:
+                            full_title = title_block.text.replace("\xa0", " ")
+                            area = full_title.split("·")[0].strip()
+                        else:
+                            area = "Площадь неизвестна"
 
-                # Метро и время
-                metro = metro_block.text if metro_block else "Метро не указано"
-                distance = distance_block.text.replace("\xa0", " ") if distance_block else ""
+                        # Метро и время
+                        metro = metro_block.text if metro_block else "Метро не указано"
+                        distance = distance_block.text.replace("\xa0", " ") if distance_block else ""
 
-                # Фото
-                if img_tag and img_tag.get("src"):
-                    raw_img = img_tag.get("src")
-                    img_url = f"https:{raw_img}" if raw_img.startswith("//") else raw_img
-                else:
-                    img_url = "Нет фото"
+                        # Фото
+                        if img_tag and img_tag.get("src"):
+                            raw_img = img_tag.get("src")
+                            img_url = f"https:{raw_img}" if raw_img.startswith("//") else raw_img
+                        else:
+                            img_url = "Нет фото"
 
-                # Пытаемся добавить в БД
-                is_new = add_flat(full_url, area, clean_price, metro, img_url)
-                if is_new:
-                    print(f"🆕 Найдена новая квартира: {full_url}")
-                    asyncio.run(send(area, metro, distance, clean_price, full_url, img_url))
-                else:
-                    print(f"Квартира уже есть в базе, пропускаем: {full_url}")
-    else:
-        print(f"Ошибка доступа к Яндексу: {response.status_code}")
+                        # Пытаемся добавить в БД
+                        is_new = add_flat(full_url, area, clean_price, metro, img_url)
+                        if is_new:
+                            print(f"Найдена новая квартира: {full_url}")
+                            # !!! НОВОЕ: Плюсуем счетчик ТОЛЬКО если квартира новая и добавлена в базу !!!
+                            FLATS_FOUND.inc()
+                            asyncio.run(send(area, metro, distance, clean_price, full_url, img_url))
+                        else:
+                            print(f"Квартира уже есть в базе, пропускаем: {full_url}")
+            else:
+                print(f"Ошибка доступа к Яндексу: {response.status_code}")
+                PARSE_ERRORS.inc()
+
+        except Exception as e:
+            print(f"Произошла непредвиденная ошибка при парсинге: {e}")
+            PARSE_ERRORS.inc()
+            raise e
