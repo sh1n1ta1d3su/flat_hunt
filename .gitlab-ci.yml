@@ -1,5 +1,9 @@
 image: python:3.11-slim
 
+variables:
+  DOCKER_BUILDKIT: 1
+  DOCKER_TLS_CERTDIR: "/certs"
+  
 stages:
   - lint
   - test
