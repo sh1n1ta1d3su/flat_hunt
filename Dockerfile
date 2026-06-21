@@ -15,10 +15,11 @@ COPY requirements.txt .
 # Используем BuildKit для кэширования загрузок(--mount=type=cache - неявный указатель на то что нужен buildkit)
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip && \
-    pip install -r requirements.txt \
+    pip install -r requirements.txt
 
 # Вторая стадия - runner
 FROM python:3.11-slim as runner
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
