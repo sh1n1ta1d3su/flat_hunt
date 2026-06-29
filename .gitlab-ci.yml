@@ -8,6 +8,7 @@ stages:
   - lint
   - test
   - build
+  - deploy
 
 before_script:
   - pip install --upgrade pip
@@ -34,3 +35,16 @@ build_images:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build -t $CI_REGISTRY_IMAGE/parser:latest -f Dockerfile .
     - docker push $CI_REGISTRY_IMAGE/parser:latest
+
+deploy-to-vps:
+  stage: deploy
+  tags:
+    - vps-deploy
+  before_script: []
+  script:
+    - echo "Начинаем деплой"
+    - cp $PROD_ENV .env
+    - docker compose --project-name flat_hunter down
+    - docker compose --project-name flat_hunter up -d --build
+    - docker image prune -f
+    - echo "Деплой успешно завершен!"
