@@ -18,16 +18,34 @@ USER_ID = int(os.getenv("TELEGRAM_USER_ID", "0"))
 
 proxy_url = "socks5://oRJ0UJ:8TBbVX@45.157.122.244:8000"
 
-connector = ProxyConnector.from_url(proxy_url)
-aiohttp_session = ClientSession(connector=connector)
-
-session = AiohttpSession(client_session=aiohttp_session)
-
-bot = Bot(token=BOT_TOKEN, session=session)
 dp = Dispatcher()
 
+_bot = None
+
+
+def get_bot():
+    global _bot
+
+    if _bot is None:
+        from aiohttp_socks import ProxyConnector
+        from aiohttp import ClientSession
+        from aiogram.client.session.aiohttp import AiohttpSession
+
+        proxy_url = os.getenv(
+            "PROXY_URL",
+            "socks5://oRJ0UJ:8TBbVX@45.157.122.244:8000"
+        )
+
+        connector = ProxyConnector.from_url(proxy_url)
+        aiohttp_session = ClientSession(connector=connector)
+        session = AiohttpSession(client_session=aiohttp_session)
+
+        _bot = Bot(token=BOT_TOKEN, session=session)
+
+    return _bot
 
 async def send(area, metro, distance, clean_price, full_url, img_url):
+    bot = get_bot()
     text = (
         f"🏠 <b>Новая квартира!</b>\n"
         f"💰 Цена: {clean_price}\n"
@@ -86,12 +104,10 @@ async def cmd_current(message: types.Message):
     else:
         await message.answer("📭 Ссылка не задана. Задай её командой /set")
 
-
 async def main():
     init_db()
     print("Бот запущен!")
-    await dp.start_polling(bot)
-
+    await dp.start_polling(get_bot())
 
 if __name__ == "__main__":
     asyncio.run(main())
