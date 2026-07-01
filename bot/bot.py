@@ -40,19 +40,24 @@ async def send(area, metro, distance, clean_price, full_url, img_url):
         f"🔗 <a href='{full_url}'>Перейти к объявлению</a>"
     )
 
-    if img_url.startswith("http"):
-        await bot.send_photo(
-            chat_id=USER_ID,
-            photo=img_url,
-            caption=text,
-            parse_mode="HTML"
-        )
-    else:
-        await bot.send_message(
-            chat_id=USER_ID,
-            text=text,
-            parse_mode="HTML"
-        )
+    try:
+        if img_url.startswith("http"):
+            await bot.send_photo(
+                chat_id=USER_ID,
+                photo=img_url,
+                caption=text,
+                parse_mode="HTML"
+            )
+        else:
+            await bot.send_message(
+                chat_id=USER_ID,
+                text=text,
+                parse_mode="HTML"
+            )
+
+    finally:
+        await bot.session.close()
+
 dp = Dispatcher()
 
 
