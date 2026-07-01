@@ -92,7 +92,14 @@ def parse_flats_task():
                             print(f"Найдена новая квартира: {full_url}")
                             # !!! НОВОЕ: Плюсуем счетчик ТОЛЬКО если квартира новая и добавлена в базу !!!
                             FLATS_FOUND.inc()
-                            asyncio.run(send(area, metro, distance, clean_price, full_url, img_url))
+                            loop = asyncio.new_event_loop()
+                            try:
+                                asyncio.set_event_loop(loop)
+                                loop.run_until_complete(
+                                    send(area, metro, distance, clean_price, full_url, img_url)
+                                )
+                            finally:
+                                loop.close()
                         else:
                             print(f"Квартира уже есть в базе, пропускаем: {full_url}")
             else:
