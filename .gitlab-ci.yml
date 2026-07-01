@@ -23,7 +23,8 @@ lint_code:
 test_code:
   stage: test
   script:
-    - pytest --exit-zero
+    - pip install -r requirements-dev.txt
+    - pytest
 
 build_images:
   stage: build
