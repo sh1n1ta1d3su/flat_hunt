@@ -27,8 +27,7 @@ def get_bot():
     global _bot
 
     if _bot is None:
-        from aiohttp_socks import ProxyConnector
-        from aiohttp import ClientSession
+        from aiogram import Bot
         from aiogram.client.session.aiohttp import AiohttpSession
 
         proxy_url = os.getenv(
@@ -36,9 +35,7 @@ def get_bot():
             "socks5://oRJ0UJ:8TBbVX@45.157.122.244:8000"
         )
 
-        connector = ProxyConnector.from_url(proxy_url)
-        aiohttp_session = ClientSession(connector=connector)
-        session = AiohttpSession(client_session=aiohttp_session)
+        session = AiohttpSession(proxy=proxy_url)
 
         _bot = Bot(token=BOT_TOKEN, session=session)
 
