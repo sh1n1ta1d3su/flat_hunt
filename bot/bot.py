@@ -16,7 +16,7 @@ from database import set_search_url, get_search_url, init_db
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 USER_ID = int(os.getenv("TELEGRAM_USER_ID", "0"))
 
-proxy_url = "socks5://login:password@ip:port"
+proxy_url = "socks5://oRJ0UJ:8TBbVX@45.157.122.244:8000"
 
 connector = ProxyConnector.from_url(proxy_url)
 aiohttp_session = ClientSession(connector=connector)
