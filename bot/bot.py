@@ -20,26 +20,15 @@ proxy_url = "socks5://oRJ0UJ:8TBbVX@45.157.122.244:8000"
 
 dp = Dispatcher()
 
-_bot = None
-
-
 def get_bot():
-    global _bot
+    proxy_url = os.getenv(
+        "PROXY_URL",
+        "socks5://oRJ0UJ:8TBbVX@45.157.122.244:8000"
+    )
 
-    if _bot is None:
-        from aiogram import Bot
-        from aiogram.client.session.aiohttp import AiohttpSession
+    session = AiohttpSession(proxy=proxy_url)
 
-        proxy_url = os.getenv(
-            "PROXY_URL",
-            "socks5://oRJ0UJ:8TBbVX@45.157.122.244:8000"
-        )
-
-        session = AiohttpSession(proxy=proxy_url)
-
-        _bot = Bot(token=BOT_TOKEN, session=session)
-
-    return _bot
+    return Bot(token=BOT_TOKEN, session=session)
 
 async def send(area, metro, distance, clean_price, full_url, img_url):
     bot = get_bot()
